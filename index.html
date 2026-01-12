@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Generate Code128 barcodes from text input. Download as PNG. Batch generation and ZIP download supported.">
+    <meta name="theme-color" content="#667eea">
+    <title>CodeCraft128</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚗️</text></svg>">
+    
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+    
+    <!-- Local scripts with CDN fallback for offline support -->
+    <script>
+        // Load JsBarcode - try local first, fallback to CDN
+        (function() {
+            const script = document.createElement('script');
+            script.src = 'JsBarcode.all.min.js';
+            script.defer = true;
+            script.onerror = function() {
+                const fallback = document.createElement('script');
+                fallback.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js';
+                fallback.defer = true;
+                document.head.appendChild(fallback);
+            };
+            document.head.appendChild(script);
+        })();
+    </script>
+    <script>
+        // Load JSZip - try local first, fallback to CDN
+        (function() {
+            const script = document.createElement('script');
+            script.src = 'jszip.min.js';
+            script.defer = true;
+            script.onerror = function() {
+                const fallback = document.createElement('script');
+                fallback.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                fallback.defer = true;
+                document.head.appendChild(fallback);
+            };
+            document.head.appendChild(script);
+        })();
+    </script>
+    
+    <!-- Main application script -->
+    <script src="js/app.js" defer></script>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <div class="container">
+        <header>
+            <h1>⚗️ CodeCraft128</h1>
+        </header>
+        
+        <main id="main-content">
+            <section class="input-section" aria-labelledby="input-section-title">
+                <h2 id="input-section-title" class="sr-only">Input Section</h2>
+                
+                <div class="form-group">
+                    <label id="mode-label">Input Mode:</label>
+                    <div class="input-mode-toggle" role="tablist" aria-labelledby="mode-label">
+                        <button 
+                            class="mode-btn active" 
+                            id="mode-single" 
+                            role="tab"
+                            aria-selected="true"
+                            aria-controls="single-input-group"
+                            aria-pressed="true">
+                            Single Line
+                        </button>
+                        <button 
+                            class="mode-btn" 
+                            id="mode-multiple" 
+                            role="tab"
+                            aria-selected="false"
+                            aria-controls="multiple-input-group"
+                            aria-pressed="false">
+                            Multiple Lines
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group" id="single-input-group" role="tabpanel" aria-labelledby="mode-single">
+                    <label for="barcodeText">
+                        Enter Text to Generate Code128 Barcode:
+                    </label>
+                    <input 
+                        type="text" 
+                        id="barcodeText" 
+                        placeholder="Enter text here..." 
+                        aria-describedby="single-input-help"
+                        maxlength="1000"
+                        autocomplete="off" />
+                    <div id="single-input-help" class="input-feedback" aria-live="polite"></div>
+                </div>
+
+                <div class="form-group" id="multiple-input-group" style="display: none;" role="tabpanel" aria-labelledby="mode-multiple">
+                    <label for="barcodeTextMultiple">
+                        Enter Multiple Lines (one per line):
+                    </label>
+                    <textarea 
+                        id="barcodeTextMultiple" 
+                        placeholder="Enter text here, one per line...&#10;Example:&#10;Line 1&#10;Line 2&#10;Line 3"
+                        aria-describedby="multiple-input-help"
+                        rows="6"
+                        autocomplete="off"></textarea>
+                    <div id="multiple-input-help" class="input-feedback" aria-live="polite"></div>
+                </div>
+
+                <div class="advanced-options">
+                    <button 
+                        type="button"
+                        class="advanced-toggle" 
+                        id="advancedToggle"
+                        aria-expanded="false"
+                        aria-controls="advancedOptions">
+                        ⚙️ Advanced Options
+                    </button>
+                    <div class="advanced-content" id="advancedOptions" style="display: none;">
+                        <div class="form-group">
+                            <label for="barcodeOrientation">Barcode Orientation:</label>
+                            <select id="barcodeOrientation" style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px;">
+                                <option value="0">0° (Normal)</option>
+                                <option value="90">90° (Rotated Right)</option>
+                                <option value="180">180° (Upside Down)</option>
+                                <option value="270">270° (Rotated Left)</option>
+                            </select>
+                            <div class="input-feedback info" style="margin-top: 5px;">
+                                Rotate the barcode orientation
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="overlayImageToggle">
+                                <input 
+                                    type="checkbox" 
+                                    id="overlayImageToggle" 
+                                    aria-describedby="overlay-image-help">
+                                Add Custom Image Overlay
+                            </label>
+                            <div id="overlay-image-help" class="input-feedback info" style="margin-top: 5px;">
+                                Upload an image to display on top of all generated barcodes
+                            </div>
+                        </div>
+                        <div class="form-group" id="imageUploadGroup" style="display: none;">
+                            <label for="overlayImageInput">Select Image:</label>
+                            <input 
+                                type="file" 
+                                id="overlayImageInput" 
+                                accept="image/*"
+                                aria-describedby="image-preview-help">
+                            <div id="image-preview-help" class="input-feedback" style="margin-top: 5px;"></div>
+                            <div id="imagePreview" style="margin-top: 10px; display: none;">
+                                <img id="previewImage" src="" alt="Preview" style="max-width: 200px; max-height: 100px; border: 1px solid #ddd; border-radius: 4px;">
+                                <button type="button" id="removeImageBtn" style="margin-left: 10px; padding: 5px 10px; font-size: 12px;">Remove Image</button>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label for="imagePosition">Image Position:</label>
+                                <select id="imagePosition" style="width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 6px; font-size: 14px;">
+                                    <option value="right">Right of Barcode</option>
+                                    <option value="left">Left of Barcode</option>
+                                    <option value="over">Above Barcode</option>
+                                    <option value="under">Under Barcode</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label for="imageSize">
+                                    Image Size: <span id="imageSizeValue">100</span>%
+                                </label>
+                                <input 
+                                    type="range" 
+                                    id="imageSize" 
+                                    min="25" 
+                                    max="200" 
+                                    value="100" 
+                                    step="5"
+                                    style="width: 100%;"
+                                    aria-describedby="image-size-help">
+                                <div id="image-size-help" class="input-feedback info" style="margin-top: 5px;">
+                                    Adjust the size of the image relative to the barcode height
+                                </div>
+                            </div>
+                            
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label for="downloadScale">
+                                    Download Image Scale: <span id="downloadScaleValue">1.0</span>x
+                                </label>
+                                <input 
+                                    type="range" 
+                                    id="downloadScale" 
+                                    min="0.5" 
+                                    max="3.0" 
+                                    value="1.0" 
+                                    step="0.1"
+                                    style="width: 100%;"
+                                    aria-describedby="download-scale-help">
+                                <div id="download-scale-help" class="input-feedback info" style="margin-top: 5px;">
+                                    Control the resolution/scale of the downloaded image (0.5x = smaller file, 3.0x = higher quality)
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button 
+                    id="generateBtn" 
+                    aria-label="Generate barcode from entered text">
+                    Generate Barcode(s)
+                </button>
+                
+                <div class="input-feedback info" style="margin-top: 10px; font-size: 0.875em;">
+                    <strong>Keyboard Shortcuts:</strong> Enter (single line) or Ctrl+Enter (multiple lines) to generate. 
+                    Ctrl+D to download all. Escape to clear input.
+                </div>
+            </section>
+
+            <section class="barcode-container" id="barcodeContainer" aria-live="polite" aria-label="Generated barcodes">
+                <div class="empty-state">
+                    <p>No barcodes generated yet. Enter text and click "Generate Barcode" to start.</p>
+                </div>
+            </section>
+
+            <div class="button-group" id="buttonGroup" style="display: none;" role="group" aria-label="Barcode actions">
+                <button 
+                    class="download-all-btn" 
+                    id="downloadAllBtn" 
+                    aria-label="Download all barcodes as a ZIP file">
+                    Download All as ZIP
+                </button>
+                <button 
+                    class="download-all-btn" 
+                    id="downloadAllIndividuallyBtn" 
+                    style="background: #6f42c1;"
+                    aria-label="Download all barcodes individually">
+                    Download All Individually
+                </button>
+                <button 
+                    class="clear-btn" 
+                    id="clearAllBtn"
+                    aria-label="Clear all generated barcodes">
+                    Clear All
+                </button>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Screen reader only class -->
+    <style>
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border-width: 0;
+        }
+    </style>
+</body>
+</html>
